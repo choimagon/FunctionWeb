@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>시간 계산기</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"], input[type="date"], select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        .time-select {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .time-select select {
+            flex: 1;
+        }
+        .process-time {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .process-time input, .process-time select {
+            flex: 1;
+        }
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>시간 계산기</h2>
+
+        <label for="startDate">시작 날짜 선택</label>
+        <input type="date" id="startDate">
+
+        <div class="time-select">
+            <select id="startHour"></select>
+            <select id="startMinute"></select>
+        </div>
+
+        <label for="multiplier">프로세스 반복 횟수 (곱하기, 더하기 가능)</label>
+        <input type="text" id="multiplier" placeholder="예: 10*10, 50+20 등">
+
+        <label for="perProcess">프로세스 시간</label>
+        <div class="process-time">
+            <input type="number" id="perProcess" placeholder="숫자만 입력">
+            <select id="processUnit">
+                <option value="seconds">초</option>
+                <option value="minutes">분</option>
+                <option value="hours">시</option>
+                <option value="days">일</option>
+            </select>
+        </div>
+
+        <button onclick="calculate()">계산하기</button>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const hourSelect = document.getElementById("startHour");
+            const minuteSelect = document.getElementById("startMinute");
+
+            for (let h = 0; h < 24; h++) {
+                let opt = document.createElement("option");
+                opt.value = h;
+                opt.text = h + "시";
+                hourSelect.add(opt);
+            }
+
+            for (let m = 0; m < 60; m++) {
+                let opt = document.createElement("option");
+                opt.value = m;
+                opt.text = m + "분";
+                minuteSelect.add(opt);
+            }
+        });
+
+        function safeEval(expr) {
+            // 안전한 수식 파싱 ( *, /, +, - 만 허용)
+            if (/^[0-9+\-*/().\s]+$/.test(expr)) {
+                return Function('"use strict";return (' + expr + ')')();
+            } else {
+                throw new Error("허용되지 않는 문자");
+            }
+        }
+
+        function calculate() {
+            const startDateStr = document.getElementById("startDate").value;
+            const startHour = parseInt(document.getElementById("startHour").value);
+            const startMinute = parseInt(document.getElementById("startMinute").value);
+
+            if (!startDateStr) {
+                alert("시작 날짜를 선택해주세요.");
+                return;
+            }
+
+            const startDate = new Date(startDateStr);
+            startDate.setHours(startHour);
+            startDate.setMinutes(startMinute);
+            startDate.setSeconds(0);
+
+            let multiplierInput = document.getElementById("multiplier").value.trim();
+            let multiplier;
+            try {
+                multiplier = safeEval(multiplierInput);
+            } catch (e) {
+                alert("반복 횟수 수식이 올바르지 않습니다.");
+                return;
+            }
+
+            const perProcess = parseFloat(document.getElementById("perProcess").value);
+            if (isNaN(perProcess)) {
+                alert("프로세스 시간을 입력해주세요.");
+                return;
+            }
+
+            const processUnit = document.getElementById("processUnit").value;
+
+            let unitMs = 0;
+
+            if (processUnit === "seconds") {
+                unitMs = perProcess * 1000;
+            } else if (processUnit === "minutes") {
+                unitMs = perProcess * 60 * 1000;
+            } else if (processUnit === "hours") {
+                unitMs = perProcess * 60 * 60 * 1000;
+            } else if (processUnit === "days") {
+                unitMs = perProcess * 24 * 60 * 60 * 1000;
+            }
+
+            const totalMs = unitMs * multiplier;
+            const endDate = new Date(startDate.getTime() + totalMs);
+
+            const totalDays = (totalMs / (1000 * 60 * 60 * 24)).toFixed(4);
+
+            document.getElementById("result").innerText = 
+                `종료 일시: ${endDate.toLocaleString("ko-KR")}
+총 걸린 시간: 약 ${totalDays} 일`;
+        }
+    </script>
+</body>
+</html>
